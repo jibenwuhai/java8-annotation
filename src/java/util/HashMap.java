@@ -566,9 +566,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      */
     final Node<K,V> getNode(int hash, Object key) {
         Node<K,V>[] tab; Node<K,V> first, e; int n; K k;
-        if ((tab = table) != null && (n = tab.length) > 0 &&
-            (first = tab[(n - 1) & hash]) != null) {
-            if (first.hash == hash && // always check first node
+        if ((tab = table) != null && (n = tab.length) > 0 &&(first = tab[(n - 1) & hash]) != null) {//计算hash所在的槽位的位置
+            if (first.hash == hash && // always check first node 检查第一个节点
                 ((k = first.key) == key || (key != null && key.equals(k))))
                 return first;
             if ((e = first.next) != null) {
@@ -591,6 +590,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @param   key   The key whose presence in this map is to be tested
      * @return <tt>true</tt> if this map contains a mapping for the specified
      * key.
+     * 是否包含Key是直接获取这个Key的节点看是否存在
      */
     public boolean containsKey(Object key) {
         return getNode(hash(key), key) != null;
@@ -618,51 +618,52 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @param hash hash for key
      * @param key the key
      * @param value the value to put
-     * @param onlyIfAbsent if true, don't change existing value
-     * @param evict if false, the table is in creation mode.
+     * @param onlyIfAbsent if true, 不改变现有的值
+     * @param evict if false, the table is in creation mode. 处于创建者模式
      * @return previous value, or null if none
      */
-    final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
-                   boolean evict) {
+    final V putVal(int hash, K key, V value, boolean onlyIfAbsent,boolean evict) {
         Node<K,V>[] tab;
         Node<K,V> p;
         int n, i;
         if ((tab = table) == null || (n = tab.length) == 0) {  //无数据初始化 tab
             n = (tab = resize()).length;
         }
-        if ((p = tab[i = (n - 1) & hash]) == null)
+        if ((p = tab[i = (n - 1) & hash]) == null) {  //hash槽位的位置无值直接放入
             tab[i] = newNode(hash, key, value, null);
-        else {
-            Node<K,V> e; K k;
-            if (p.hash == hash &&
-                ((k = p.key) == key || (key != null && key.equals(k))))
+        }else {
+            Node<K,V> e;
+            K k;
+            if (p.hash == hash &&((k = p.key) == key || (key != null && key.equals(k)))) {//hash相同且key相同，将要修改的值指向这个位置
                 e = p;
-            else if (p instanceof TreeNode)
-                e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
-            else {
-                for (int binCount = 0; ; ++binCount) {
-                    if ((e = p.next) == null) {
-                        p.next = newNode(hash, key, value, null);
-                        if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
+            }else if (p instanceof TreeNode) { //槽位里放的是树形结构
+                e = ((TreeNode<K, V>) p).putTreeVal(this, tab, hash, key, value);
+            }else {//链式结构
+                for (int binCount = 0; ; ++binCount) {  //循环链下所以的值
+                    if ((e = p.next) == null) {//指向链表的位置，如果这个位置为空
+                        p.next = newNode(hash, key, value, null); //链表后新增一个节点
+                        if (binCount >= TREEIFY_THRESHOLD - 1) { // 链表长度>=88  （从0开始所以要-1） 转成红黑树
                             treeifyBin(tab, hash);
+                        }
                         break;
                     }
-                    if (e.hash == hash &&
-                        ((k = e.key) == key || (key != null && key.equals(k))))
+                    //如果 hash相同且key相同 跳出循环
+                    if (e.hash == hash &&((k = e.key) == key || (key != null && key.equals(k)))) {
                         break;
+                    }
                     p = e;
                 }
             }
-            if (e != null) { // existing mapping for key
+            if (e != null) { // 修改操作
                 V oldValue = e.value;
                 if (!onlyIfAbsent || oldValue == null)
-                    e.value = value;
-                afterNodeAccess(e);
-                return oldValue;
+                    e.value = value;  //赋值操作
+                afterNodeAccess(e);   //这个三个方法都是为了继承HashMap的LinkedHashMap类服务的
+                return oldValue;//修改到这里就结束了
             }
         }
-        ++modCount;
-        if (++size > threshold)
+        ++modCount; //修改次数+1
+        if (++size > threshold) //size+1  如果大于边界值则扩容
             resize();
         afterNodeInsertion(evict);
         return null;
@@ -797,8 +798,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      */
     public V remove(Object key) {
         Node<K,V> e;
-        return (e = removeNode(hash(key), key, null, false, true)) == null ?
-            null : e.value;
+        return (e = removeNode(hash(key), key, null, false, true)) == null ?null : e.value;
     }
 
     /**
@@ -807,27 +807,26 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @param hash hash for key
      * @param key the key
      * @param value the value to match if matchValue, else ignored
-     * @param matchValue if true only remove if value is equal
-     * @param movable if false do not move other nodes while removing
+     * @param matchValue if true only remove if value is equal，如果为真，在值相等时移除
+     * @param movable if false do not move other nodes while removing 若为false 删除时不移动其他节点
      * @return the node, or null if none
      */
     final Node<K,V> removeNode(int hash, Object key, Object value,
                                boolean matchValue, boolean movable) {
-        Node<K,V>[] tab; Node<K,V> p; int n, index;
-        if ((tab = table) != null && (n = tab.length) > 0 &&
-            (p = tab[index = (n - 1) & hash]) != null) {
+        Node<K,V>[] tab;
+        Node<K,V> p;
+        int n, index;
+        //table有值 且长度>0 且这个key所以对应得hash节点有值
+        if ((tab = table) != null && (n = tab.length) > 0 && (p = tab[index = (n - 1) & hash]) != null) {
             Node<K,V> node = null, e; K k; V v;
-            if (p.hash == hash &&
-                ((k = p.key) == key || (key != null && key.equals(k))))
+            if (p.hash == hash &&((k = p.key) == key || (key != null && key.equals(k)))) {  //槽位的key就是等于移除的key
                 node = p;
-            else if ((e = p.next) != null) {
-                if (p instanceof TreeNode)
+            }else if ((e = p.next) != null) {  //还有下个节点
+                if (p instanceof TreeNode) //红黑色，获取树的节点
                     node = ((TreeNode<K,V>)p).getTreeNode(hash, key);
-                else {
+                else {  //链表，循环链表
                     do {
-                        if (e.hash == hash &&
-                            ((k = e.key) == key ||
-                             (key != null && key.equals(k)))) {
+                        if (e.hash == hash &&((k = e.key) == key ||(key != null && key.equals(k)))) {  //循环至key相等的位置，结束循环
                             node = e;
                             break;
                         }
@@ -835,16 +834,16 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                     } while ((e = e.next) != null);
                 }
             }
-            if (node != null && (!matchValue || (v = node.value) == value ||
-                                 (value != null && value.equals(v)))) {
-                if (node instanceof TreeNode)
-                    ((TreeNode<K,V>)node).removeTreeNode(this, tab, movable);
-                else if (node == p)
+            if (node != null && (!matchValue || (v = node.value) == value ||(value != null && value.equals(v)))) {
+                if (node instanceof TreeNode) {  //红黑树的移除
+                    ((TreeNode<K, V>) node).removeTreeNode(this, tab, movable);
+                }else if (node == p) {//移除根
                     tab[index] = node.next;
-                else
+                }else {//移除链表
                     p.next = node.next;
-                ++modCount;
-                --size;
+                }
+                ++modCount; //修改次数增加
+                --size; //size减一
                 afterNodeRemoval(node);
                 return node;
             }
@@ -873,6 +872,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @param value value whose presence in this map is to be tested
      * @return <tt>true</tt> if this map maps one or more keys to the
      *         specified value
+     *  是否包含某个值是循环所以的值
      */
     public boolean containsValue(Object value) {
         Node<K,V>[] tab; V v;
