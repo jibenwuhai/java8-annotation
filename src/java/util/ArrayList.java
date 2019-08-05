@@ -110,11 +110,12 @@ public class ArrayList<E> extends AbstractList<E>
     private static final long serialVersionUID = 8683452581122892189L;
 
     /**
-     * Default initial capacity.
+     * 默认初始化容量
      */
     private static final int DEFAULT_CAPACITY = 10;
 
     /**
+     * 用于空实例的共享空数组实例
      * Shared empty array instance used for empty instances.
      */
     private static final Object[] EMPTY_ELEMENTDATA = {};
@@ -149,7 +150,7 @@ public class ArrayList<E> extends AbstractList<E>
      *         is negative
      */
     public ArrayList(int initialCapacity) {
-        if (initialCapacity > 0) {
+        if (initialCapacity > 0) { //创建一个存储对象
             this.elementData = new Object[initialCapacity];
         } else if (initialCapacity == 0) {
             this.elementData = EMPTY_ELEMENTDATA;
@@ -190,6 +191,7 @@ public class ArrayList<E> extends AbstractList<E>
      * Trims the capacity of this <tt>ArrayList</tt> instance to be the
      * list's current size.  An application can use this operation to minimize
      * the storage of an <tt>ArrayList</tt> instance.
+     * the storage of an <tt>ArrayList</tt> instance.
      */
     public void trimToSize() {
         modCount++;
@@ -219,31 +221,33 @@ public class ArrayList<E> extends AbstractList<E>
             ensureExplicitCapacity(minCapacity);
         }
     }
-
+    //计算容量
     private static int calculateCapacity(Object[] elementData, int minCapacity) {
         if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
             return Math.max(DEFAULT_CAPACITY, minCapacity);
         }
         return minCapacity;
     }
-
+    //确保内部容量
     private void ensureCapacityInternal(int minCapacity) {
         ensureExplicitCapacity(calculateCapacity(elementData, minCapacity));
     }
-
+    //确保明确容量
     private void ensureExplicitCapacity(int minCapacity) {
-        modCount++;
+        modCount++;  //修改次数
 
-        // overflow-conscious code
-        if (minCapacity - elementData.length > 0)
+        // overflow-conscious code 扩容
+        if (minCapacity - elementData.length > 0) {
             grow(minCapacity);
+        }
     }
 
     /**
-     * The maximum size of array to allocate.
-     * Some VMs reserve some header words in an array.
+     * The maximum size of array to allocate.  要分配的数组的最大大小
+     * Some VMs reserve some header words in an array. 一些虚拟机保留头信息
      * Attempts to allocate larger arrays may result in
      * OutOfMemoryError: Requested array size exceeds VM limit
+     * 尝试分配更大数组可能导致OutOfMemoryError
      */
     private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
@@ -255,22 +259,21 @@ public class ArrayList<E> extends AbstractList<E>
      */
     private void grow(int minCapacity) {
         // overflow-conscious code
-        int oldCapacity = elementData.length;
-        int newCapacity = oldCapacity + (oldCapacity >> 1);
-        if (newCapacity - minCapacity < 0)
-            newCapacity = minCapacity;
-        if (newCapacity - MAX_ARRAY_SIZE > 0)
+        int oldCapacity = elementData.length;  //list实际长度
+        int newCapacity = oldCapacity + (oldCapacity >> 1);//新的容量 = old*1.5
+        if (newCapacity - minCapacity < 0) {
+            newCapacity = minCapacity;   //1.5倍扩容后，还是不够最小需要容量，则取最小需要容量
+        }
+        if (newCapacity - MAX_ARRAY_SIZE > 0) //超过最大数组
             newCapacity = hugeCapacity(minCapacity);
         // minCapacity is usually close to size, so this is a win:
-        elementData = Arrays.copyOf(elementData, newCapacity);
+        elementData = Arrays.copyOf(elementData, newCapacity);//扩容后将旧对象赋值给新对象
     }
 
     private static int hugeCapacity(int minCapacity) {
-        if (minCapacity < 0) // overflow
+        if (minCapacity < 0) // overflow  超过Integer.MAX_VALUE
             throw new OutOfMemoryError();
-        return (minCapacity > MAX_ARRAY_SIZE) ?
-            Integer.MAX_VALUE :
-            MAX_ARRAY_SIZE;
+        return (minCapacity > MAX_ARRAY_SIZE) ?Integer.MAX_VALUE : MAX_ARRAY_SIZE;
     }
 
     /**
@@ -474,12 +477,10 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     public void add(int index, E element) {
-        rangeCheckForAdd(index);
-
+        rangeCheckForAdd(index);  //检查下标是否越界
         ensureCapacityInternal(size + 1);  // Increments modCount!!
-        System.arraycopy(elementData, index, elementData, index + 1,
-                         size - index);
-        elementData[index] = element;
+        System.arraycopy(elementData, index, elementData, index + 1,size - index);//后面的元素向后移动一位
+        elementData[index] = element;//空出来的位置给新添加的元素
         size++;
     }
 
@@ -493,16 +494,16 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     public E remove(int index) {
-        rangeCheck(index);
+        rangeCheck(index);//是否越界
 
-        modCount++;
-        E oldValue = elementData(index);
+        modCount++;  //增加修改次数
+        E oldValue = elementData(index); //取出要移除的值
 
-        int numMoved = size - index - 1;
-        if (numMoved > 0)
-            System.arraycopy(elementData, index+1, elementData, index,
-                             numMoved);
-        elementData[--size] = null; // clear to let GC do its work
+        int numMoved = size - index - 1;//移除的下标位置
+        if (numMoved > 0) {
+            System.arraycopy(elementData, index + 1, elementData, index, numMoved);//下标之后的向前移动
+        }
+        elementData[--size] = null; // clear to let GC do its work，清除让GC回收
 
         return oldValue;
     }
@@ -520,7 +521,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @param o element to be removed from this list, if present
      * @return <tt>true</tt> if this list contained the specified element
      */
-    public boolean remove(Object o) {
+    public boolean remove(Object o) {  //移除对象
         if (o == null) {
             for (int index = 0; index < size; index++)
                 if (elementData[index] == null) {
@@ -540,13 +541,13 @@ public class ArrayList<E> extends AbstractList<E>
     /*
      * Private remove method that skips bounds checking and does not
      * return the value removed.
+     * 跟remove(int index）的需别，不用校验数组越界。不用取出要一出的值
      */
     private void fastRemove(int index) {
         modCount++;
         int numMoved = size - index - 1;
         if (numMoved > 0)
-            System.arraycopy(elementData, index+1, elementData, index,
-                             numMoved);
+            System.arraycopy(elementData, index+1, elementData, index,numMoved);
         elementData[--size] = null; // clear to let GC do its work
     }
 
