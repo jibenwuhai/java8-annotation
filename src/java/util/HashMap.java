@@ -613,7 +613,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     /**
-     * Implements Map.put and related methods.
+     * Implements Map.put and related methods. TODO
      *
      * @param hash hash for key
      * @param key the key
