@@ -197,12 +197,12 @@ public class ThreadLocal<T> {
      *        this thread-local.
      */
     public void set(T value) {
-        Thread t = Thread.currentThread();
-        ThreadLocalMap map = getMap(t);
+        Thread t = Thread.currentThread(); //获取当前线程
+        ThreadLocalMap map = getMap(t); //获取线程内的ThreadLocalMap
         if (map != null)
-            map.set(this, value);
+            map.set(this, value); //插入值
         else
-            createMap(t, value);
+            createMap(t, value); //初始化map
     }
 
     /**
@@ -363,11 +363,11 @@ public class ThreadLocal<T> {
          * one when we have at least one entry to put in it.
          */
         ThreadLocalMap(ThreadLocal<?> firstKey, Object firstValue) {
-            table = new Entry[INITIAL_CAPACITY];
-            int i = firstKey.threadLocalHashCode & (INITIAL_CAPACITY - 1);
-            table[i] = new Entry(firstKey, firstValue);
+            table = new Entry[INITIAL_CAPACITY];//初始化
+            int i = firstKey.threadLocalHashCode & (INITIAL_CAPACITY - 1);//位置计算
+            table[i] = new Entry(firstKey, firstValue);//将值放入相应位置
             size = 1;
-            setThreshold(INITIAL_CAPACITY);
+            setThreshold(INITIAL_CAPACITY); //设置伐值
         }
 
         /**
@@ -488,7 +488,7 @@ public class ThreadLocal<T> {
          * Remove the entry for key.
          */
         private void remove(ThreadLocal<?> key) {
-            Entry[] tab = table;
+            Entry[] tab = table; //获取
             int len = tab.length;
             int i = key.threadLocalHashCode & (len-1);
             for (Entry e = tab[i];
