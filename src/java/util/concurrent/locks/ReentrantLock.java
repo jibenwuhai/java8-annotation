@@ -127,34 +127,34 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          * subclasses, but both need nonfair try for trylock method.
          */
         final boolean nonfairTryAcquire(int acquires) {
-            final Thread current = Thread.currentThread();
-            int c = getState();
-            if (c == 0) {
-                if (compareAndSetState(0, acquires)) {
-                    setExclusiveOwnerThread(current);
+            final Thread current = Thread.currentThread();//当前线程
+            int c = getState();//当锁的状态
+            if (c == 0) {//等于0，说明锁已经释放，
+                if (compareAndSetState(0, acquires)) {//cas抢占锁  。这是非公平锁的特性
+                    setExclusiveOwnerThread(current);//抢锁成功
                     return true;
                 }
             }
-            else if (current == getExclusiveOwnerThread()) {
-                int nextc = c + acquires;
-                if (nextc < 0) // overflow
+            else if (current == getExclusiveOwnerThread()) {//如果持有锁的线程就是当前线程，
+                int nextc = c + acquires; //state+1 增加重入次数
+                if (nextc < 0) // overflow 溢出
                     throw new Error("Maximum lock count exceeded");
-                setState(nextc);
+                setState(nextc); //设置重入次数
                 return true;
             }
             return false;
         }
 
         protected final boolean tryRelease(int releases) {
-            int c = getState() - releases;
-            if (Thread.currentThread() != getExclusiveOwnerThread())
+            int c = getState() - releases; //一层一层减少重入次数
+            if (Thread.currentThread() != getExclusiveOwnerThread())//当前线程不是抢占锁线程。抛出异常
                 throw new IllegalMonitorStateException();
-            boolean free = false;
-            if (c == 0) {
+            boolean free = false;//释放释放成功标识
+            if (c == 0) {//stete ==0 说明当前线程已经释放了资源
                 free = true;
                 setExclusiveOwnerThread(null);
             }
-            setState(c); ////释放锁的最后，写volatile变量state
+            setState(c); //释放锁的最后，写volatile变量state。利用了volatile的内存屏障特性
             return free;
         }
 
@@ -203,10 +203,10 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          * acquire on failure.
          */
         final void lock() {
-            if (compareAndSetState(0, 1))
-                setExclusiveOwnerThread(Thread.currentThread());
+            if (compareAndSetState(0, 1))  //抢占互斥资源
+                setExclusiveOwnerThread(Thread.currentThread()); //抢到锁，保存当前线程
             else
-                acquire(1);
+                acquire(1); //没有抢到锁
         }
 
         protected final boolean tryAcquire(int acquires) {
@@ -229,17 +229,17 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          * recursive call or no waiters or is first.
          */
         protected final boolean tryAcquire(int acquires) {
-            final Thread current = Thread.currentThread();
-            int c = getState(); //获取锁的开始，先读取volatile变量state
-            if (c == 0) {
-                if (!hasQueuedPredecessors() &&
-                    compareAndSetState(0, acquires)) {
+            final Thread current = Thread.currentThread();//当前线程
+            int c = getState(); //state
+            if (c == 0) {//无锁
+                if (!hasQueuedPredecessors() && //是否有等等队列
+                    compareAndSetState(0, acquires)) {//cas占有锁
                     setExclusiveOwnerThread(current);
                     return true;
                 }
             }
-            else if (current == getExclusiveOwnerThread()) {
-                int nextc = c + acquires;
+            else if (current == getExclusiveOwnerThread()) {//判断重入
+                int nextc = c + acquires;//重入次数+1
                 if (nextc < 0)
                     throw new Error("Maximum lock count exceeded");
                 setState(nextc);
@@ -454,7 +454,7 @@ public class ReentrantLock implements Lock, java.io.Serializable {
      *         hold this lock
      */
     public void unlock() {
-        sync.release(1);
+        sync.release(1);//同步器释放锁
     }
 
     /**
