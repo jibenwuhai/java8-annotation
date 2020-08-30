@@ -1629,9 +1629,9 @@ public abstract class AbstractQueuedSynchronizer
      * @return true if is reacquiring
      */
     final boolean isOnSyncQueue(Node node) {
-        if (node.waitStatus == Node.CONDITION || node.prev == null)
-            return false;
-        if (node.next != null) // If has successor, it must be on queue
+        if (node.waitStatus == Node.CONDITION || node.prev == null)//当前节点状态是等待，或者前节点为空
+            return false;//不在同步队列
+        if (node.next != null) // If has successor, it must be on queue 如果有后继，则必须在队列上
             return true;
         /*
          * node.prev can be non-null, but not yet on queue because
@@ -1641,7 +1641,7 @@ public abstract class AbstractQueuedSynchronizer
          * unless the CAS failed (which is unlikely), it will be
          * there, so we hardly ever traverse much.
          */
-        return findNodeFromTail(node);
+        return findNodeFromTail(node);//从tail发现该队列
     }
 
     /**
@@ -1651,10 +1651,10 @@ public abstract class AbstractQueuedSynchronizer
      */
     private boolean findNodeFromTail(Node node) {
         Node t = tail;
-        for (;;) {
-            if (t == node)
+        for (;;) {//从后面开始，往前一个一个找
+            if (t == node) //找到
                 return true;
-            if (t == null)
+            if (t == null)//未找到
                 return false;
             t = t.prev;
         }
@@ -1671,8 +1671,8 @@ public abstract class AbstractQueuedSynchronizer
         /*
          * If cannot change waitStatus, the node has been cancelled.
          */
-        if (!compareAndSetWaitStatus(node, Node.CONDITION, 0))
-            return false;
+        if (!compareAndSetWaitStatus(node, Node.CONDITION, 0))//cas 将condition->signal
+            return false; //失败的话，说明该节点已经被取消
 
         /*
          * Splice onto queue and try to set waitStatus of predecessor to
@@ -1680,10 +1680,10 @@ public abstract class AbstractQueuedSynchronizer
          * attempt to set waitStatus fails, wake up to resync (in which
          * case the waitStatus can be transiently and harmlessly wrong).
          */
-        Node p = enq(node);
+        Node p = enq(node);//加入aqs队列
         int ws = p.waitStatus;
-        if (ws > 0 || !compareAndSetWaitStatus(p, ws, Node.SIGNAL))
-            LockSupport.unpark(node.thread);
+        if (ws > 0 || !compareAndSetWaitStatus(p, ws, Node.SIGNAL))//如果上个节点是取消状态，或者修改上个节点的状态为signal失败
+            LockSupport.unpark(node.thread);//唤醒该节点
         return true;
     }
 
@@ -1695,8 +1695,8 @@ public abstract class AbstractQueuedSynchronizer
      * @return true if cancelled before the node was signalled
      */
     final boolean transferAfterCancelledWait(Node node) {
-        if (compareAndSetWaitStatus(node, Node.CONDITION, 0)) {
-            enq(node);
+        if (compareAndSetWaitStatus(node, Node.CONDITION, 0)) {//cas如果节点状态是condition 那么将waitStatus改为0
+            enq(node);//加到AQS等待队列
             return true;
         }
         /*
@@ -1705,8 +1705,8 @@ public abstract class AbstractQueuedSynchronizer
          * incomplete transfer is both rare and transient, so just
          * spin.
          */
-        while (!isOnSyncQueue(node))
-            Thread.yield();
+        while (!isOnSyncQueue(node))//如果还没加入到aqs队列。
+            Thread.yield();//让出时间片
         return false;
     }
 
@@ -1719,8 +1719,8 @@ public abstract class AbstractQueuedSynchronizer
     final int fullyRelease(Node node) {
         boolean failed = true;
         try {
-            int savedState = getState();
-            if (release(savedState)) {
+            int savedState = getState();//获取当前线程的state 。多次重入的话大于等于1
+            if (release(savedState)) {//全部释放，唤醒aqs队列排在第一的线程
                 failed = false;
                 return savedState;
             } else {
@@ -1728,7 +1728,7 @@ public abstract class AbstractQueuedSynchronizer
             }
         } finally {
             if (failed)
-                node.waitStatus = Node.CANCELLED;
+                node.waitStatus = Node.CANCELLED;//释放异常，将当前线程状态改为取消状态
         }
     }
 
@@ -1846,18 +1846,18 @@ public abstract class AbstractQueuedSynchronizer
          * @return its new wait node
          */
         private Node addConditionWaiter() {
-            Node t = lastWaiter;
+            Node t = lastWaiter;//尾节点
             // If lastWaiter is cancelled, clean out.
-            if (t != null && t.waitStatus != Node.CONDITION) {
-                unlinkCancelledWaiters();
-                t = lastWaiter;
+            if (t != null && t.waitStatus != Node.CONDITION) {//尾部有节点，但是节点不是condition(-2) 等待状态
+                unlinkCancelledWaiters(); //拆开并取消等待
+                t = lastWaiter; //指向新的尾节点
             }
-            Node node = new Node(Thread.currentThread(), Node.CONDITION);
-            if (t == null)
-                firstWaiter = node;
+            Node node = new Node(Thread.currentThread(), Node.CONDITION);//创建一个新的condition节点
+            if (t == null)//队列里没值
+                firstWaiter = node;//当头节点也指向当前节点
             else
-                t.nextWaiter = node;
-            lastWaiter = node;
+                t.nextWaiter = node;//放入队列尾部
+            lastWaiter = node;//last—>当前节点
             return node;
         }
 
@@ -1869,10 +1869,10 @@ public abstract class AbstractQueuedSynchronizer
          */
         private void doSignal(Node first) {
             do {
-                if ( (firstWaiter = first.nextWaiter) == null)
-                    lastWaiter = null;
-                first.nextWaiter = null;
-            } while (!transferForSignal(first) &&
+                if ( (firstWaiter = first.nextWaiter) == null)//将后面的节点设为第一节点
+                    lastWaiter = null;//队列没有值了
+                first.nextWaiter = null;//方便gc回收
+            } while (!transferForSignal(first) && //加入aqs队列失败（节点被取消）
                      (first = firstWaiter) != null);
         }
 
@@ -1905,22 +1905,22 @@ public abstract class AbstractQueuedSynchronizer
          * storms.
          */
         private void unlinkCancelledWaiters() {
-            Node t = firstWaiter;
+            Node t = firstWaiter; //头部
             Node trail = null;
             while (t != null) {
-                Node next = t.nextWaiter;
-                if (t.waitStatus != Node.CONDITION) {
-                    t.nextWaiter = null;
+                Node next = t.nextWaiter; //下一个节点
+                if (t.waitStatus != Node.CONDITION) { //被取消（非condition节点）
+                    t.nextWaiter = null;//断开连接
                     if (trail == null)
-                        firstWaiter = next;
+                        firstWaiter = next;//将头节点链接到下个节点
                     else
-                        trail.nextWaiter = next;
-                    if (next == null)
-                        lastWaiter = trail;
+                        trail.nextWaiter = next;//将上个有效节点的next指向下当前节点的下个节点
+                    if (next == null)//链表末尾
+                        lastWaiter = trail;//将末尾指向最后一个有效节点
                 }
                 else
-                    trail = t;
-                t = next;
+                    trail = t;//记录没被取消的节点
+                t = next;//检查下个节点
             }
         }
 
@@ -1937,9 +1937,9 @@ public abstract class AbstractQueuedSynchronizer
         public final void signal() {
             if (!isHeldExclusively())
                 throw new IllegalMonitorStateException();
-            Node first = firstWaiter;
+            Node first = firstWaiter;//condition队列的第一个节点
             if (first != null)
-                doSignal(first);
+                doSignal(first);//唤醒方法
         }
 
         /**
@@ -1999,9 +1999,9 @@ public abstract class AbstractQueuedSynchronizer
          * 0 if not interrupted.
          */
         private int checkInterruptWhileWaiting(Node node) {
-            return Thread.interrupted() ?
-                (transferAfterCancelledWait(node) ? THROW_IE : REINTERRUPT) :
-                0;
+            return Thread.interrupted() ?//是否被中断过
+                (transferAfterCancelledWait(node) ? THROW_IE : REINTERRUPT) : //是取消等待后是否转传 true 模式意味着在退出等待时抛出InterruptedException :false 模式意味着在退出等待时重新中断
+                0;//0未被中断过
         }
 
         /**
@@ -2011,9 +2011,9 @@ public abstract class AbstractQueuedSynchronizer
         private void reportInterruptAfterWait(int interruptMode)
             throws InterruptedException {
             if (interruptMode == THROW_IE)
-                throw new InterruptedException();
+                throw new InterruptedException();//抛出异常
             else if (interruptMode == REINTERRUPT)
-                selfInterrupt();
+                selfInterrupt();//恢复中断标识
         }
 
         /**
@@ -2030,22 +2030,22 @@ public abstract class AbstractQueuedSynchronizer
          * </ol>
          */
         public final void await() throws InterruptedException {
-            if (Thread.interrupted())
+            if (Thread.interrupted())//如果线程有中断标识，抛出InterruptedException
                 throw new InterruptedException();
-            Node node = addConditionWaiter();
-            int savedState = fullyRelease(node);
+            Node node = addConditionWaiter();//添加condition等待队列
+            int savedState = fullyRelease(node);//释放当前线程的锁。
             int interruptMode = 0;
-            while (!isOnSyncQueue(node)) {
-                LockSupport.park(this);
-                if ((interruptMode = checkInterruptWhileWaiting(node)) != 0)
+            while (!isOnSyncQueue(node)) {//不在同步队列上。while保证节点从aqs队列上移除
+                LockSupport.park(this);//线程阻塞在这里等待被唤醒
+                if ((interruptMode = checkInterruptWhileWaiting(node)) != 0) //如果被中断过，跳出while循环
                     break;
             }
-            if (acquireQueued(node, savedState) && interruptMode != THROW_IE)
+            if (acquireQueued(node, savedState) && interruptMode != THROW_IE) //自旋直到抢到锁或者挂起 THROW_IE模式意味着在退出等待时抛出InterruptedException
                 interruptMode = REINTERRUPT;
-            if (node.nextWaiter != null) // clean up if cancelled
+            if (node.nextWaiter != null) // clean up if cancelled，清理被取消的线程
                 unlinkCancelledWaiters();
             if (interruptMode != 0)
-                reportInterruptAfterWait(interruptMode);
+                reportInterruptAfterWait(interruptMode);//等待后，恢复中断标识
         }
 
         /**
