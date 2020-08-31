@@ -176,21 +176,21 @@ public class Semaphore implements java.io.Serializable {
 
         final int nonfairTryAcquireShared(int acquires) {
             for (;;) {
-                int available = getState();
-                int remaining = available - acquires;
-                if (remaining < 0 ||
-                    compareAndSetState(available, remaining))
+                int available = getState();//获取当前state状态（剩余信号量）
+                int remaining = available - acquires;//减去当前需要的信号量
+                if (remaining < 0 ||//小于0，获取不到信号量
+                    compareAndSetState(available, remaining))//cas去抢占信号量
                     return remaining;
             }
         }
 
         protected final boolean tryReleaseShared(int releases) {
-            for (;;) {
+            for (;;) {//自旋
                 int current = getState();
                 int next = current + releases;
                 if (next < current) // overflow
                     throw new Error("Maximum permit count exceeded");
-                if (compareAndSetState(current, next))
+                if (compareAndSetState(current, next))//cas去加回state
                     return true;
             }
         }
@@ -309,7 +309,7 @@ public class Semaphore implements java.io.Serializable {
      * @throws InterruptedException if the current thread is interrupted
      */
     public void acquire() throws InterruptedException {
-        sync.acquireSharedInterruptibly(1);
+        sync.acquireSharedInterruptibly(1);//获取aqs共享锁
     }
 
     /**

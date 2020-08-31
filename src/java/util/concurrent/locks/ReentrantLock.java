@@ -203,8 +203,8 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          * acquire on failure.
          */
         final void lock() {
-            if (compareAndSetState(0, 1))  //抢占互斥资源
-                setExclusiveOwnerThread(Thread.currentThread()); //抢到锁，保存当前线程
+            if (compareAndSetState(0, 1))
+                setExclusiveOwnerThread(Thread.currentThread());
             else
                 acquire(1); //没有抢到锁
         }
@@ -254,7 +254,7 @@ public class ReentrantLock implements Lock, java.io.Serializable {
      * This is equivalent to using {@code ReentrantLock(false)}.
      */
     public ReentrantLock() {
-        sync = new NonfairSync();
+        sync = new NonfairSync(); //默认时非公平锁
     }
 
     /**
@@ -282,7 +282,7 @@ public class ReentrantLock implements Lock, java.io.Serializable {
      * at which time the lock hold count is set to one.
      */
     public void lock() {
-        sync.lock();
+        sync.lock();//同步器获取锁
     }
 
     /**

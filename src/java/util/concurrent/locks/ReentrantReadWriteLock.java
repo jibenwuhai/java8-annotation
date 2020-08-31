@@ -724,7 +724,7 @@ public class ReentrantReadWriteLock
          * purposes and lies dormant until the read lock has been acquired.
          */
         public void lock() {
-            sync.acquireShared(1);
+            sync.acquireShared(1);//获取共享锁
         }
 
         /**

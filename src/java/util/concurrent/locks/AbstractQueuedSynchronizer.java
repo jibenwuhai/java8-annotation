@@ -686,7 +686,7 @@ public abstract class AbstractQueuedSynchronizer
                 if (ws == Node.SIGNAL) {
                     if (!compareAndSetWaitStatus(h, Node.SIGNAL, 0))
                         continue;            // loop to recheck cases
-                    unparkSuccessor(h);
+                    unparkSuccessor(h);//唤醒排在第一的线程
                 }
                 else if (ws == 0 &&
                          !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))
@@ -893,13 +893,13 @@ public abstract class AbstractQueuedSynchronizer
                     failed = false;
                     return;
                 }
-                if (shouldParkAfterFailedAcquire(p, node) &&
-                    parkAndCheckInterrupt())
+                if (shouldParkAfterFailedAcquire(p, node) &&//判断是否是可挂起
+                    parkAndCheckInterrupt())//阻塞，并检查中断标识
                     throw new InterruptedException();
             }
         } finally {
             if (failed)
-                cancelAcquire(node);
+                cancelAcquire(node);//取消处理
         }
     }
 
@@ -979,14 +979,14 @@ public abstract class AbstractQueuedSynchronizer
      */
     private void doAcquireSharedInterruptibly(int arg)
         throws InterruptedException {
-        final Node node = addWaiter(Node.SHARED);
+        final Node node = addWaiter(Node.SHARED);//创建等待节点，并将节点加入aqs队列
         boolean failed = true;
         try {
             for (;;) {
                 final Node p = node.predecessor();
-                if (p == head) {
-                    int r = tryAcquireShared(arg);
-                    if (r >= 0) {
+                if (p == head) {//前节点是head节点
+                    int r = tryAcquireShared(arg);//去抢占资源
+                    if (r >= 0) {//抢占成功
                         setHeadAndPropagate(node, r);
                         p.next = null; // help GC
                         failed = false;
@@ -1279,8 +1279,8 @@ public abstract class AbstractQueuedSynchronizer
      *        and can represent anything you like.
      */
     public final void acquireShared(int arg) {
-        if (tryAcquireShared(arg) < 0)
-            doAcquireShared(arg);
+        if (tryAcquireShared(arg) < 0)//获取共享锁
+            doAcquireShared(arg);//获取失败->写锁占有资源
     }
 
     /**
@@ -1298,10 +1298,10 @@ public abstract class AbstractQueuedSynchronizer
      */
     public final void acquireSharedInterruptibly(int arg)
             throws InterruptedException {
-        if (Thread.interrupted())
+        if (Thread.interrupted())//中断标识
             throw new InterruptedException();
-        if (tryAcquireShared(arg) < 0)
-            doAcquireSharedInterruptibly(arg);
+        if (tryAcquireShared(arg) < 0)//获取锁，小于0，说明共享锁已经用完了
+            doAcquireSharedInterruptibly(arg);//加入aqs队列
     }
 
     /**
@@ -1338,8 +1338,8 @@ public abstract class AbstractQueuedSynchronizer
      * @return the value returned from {@link #tryReleaseShared}
      */
     public final boolean releaseShared(int arg) {
-        if (tryReleaseShared(arg)) {
-            doReleaseShared();
+        if (tryReleaseShared(arg)) {//释放共享锁
+            doReleaseShared();//唤醒aqs队列中等待的队列
             return true;
         }
         return false;

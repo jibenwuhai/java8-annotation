@@ -122,12 +122,12 @@ public interface ReadWriteLock {
      *
      * @return the lock used for reading
      */
-    Lock readLock();
+    Lock readLock();//读锁
 
     /**
      * Returns the lock used for writing.
      *
      * @return the lock used for writing
      */
-    Lock writeLock();
+    Lock writeLock();//写锁
 }
