@@ -689,7 +689,7 @@ public abstract class AbstractQueuedSynchronizer
                     unparkSuccessor(h);//唤醒排在第一的线程
                 }
                 else if (ws == 0 &&
-                         !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))
+                         !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))//PROPAGATE：-3表示下一次共享式同步状态获取将会无条件地被传播下去
                     continue;                // loop on failed CAS
             }
             if (h == head)                   // loop if head changed
@@ -707,7 +707,7 @@ public abstract class AbstractQueuedSynchronizer
      */
     private void setHeadAndPropagate(Node node, int propagate) {
         Node h = head; // Record old head for check below
-        setHead(node);
+        setHead(node);//当前被唤醒的线程设为head
         /*
          * Try to signal next queued node if:
          *   Propagation was indicated by caller,
@@ -728,7 +728,7 @@ public abstract class AbstractQueuedSynchronizer
             (h = head) == null || h.waitStatus < 0) {
             Node s = node.next;
             if (s == null || s.isShared())
-                doReleaseShared();
+                doReleaseShared();//传递唤醒线程
         }
     }
 
@@ -987,7 +987,7 @@ public abstract class AbstractQueuedSynchronizer
                 if (p == head) {//前节点是head节点
                     int r = tryAcquireShared(arg);//去抢占资源
                     if (r >= 0) {//抢占成功
-                        setHeadAndPropagate(node, r);
+                        setHeadAndPropagate(node, r);//传递依赖
                         p.next = null; // help GC
                         failed = false;
                         return;

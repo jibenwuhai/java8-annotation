@@ -180,8 +180,8 @@ public class CountDownLatch {
                 if (c == 0)
                     return false;
                 int nextc = c-1;
-                if (compareAndSetState(c, nextc))
-                    return nextc == 0;
+                if (compareAndSetState(c, nextc))//cas去减去1
+                    return nextc == 0;//减去完成之后等于0，返回true
             }
         }
     }
@@ -228,7 +228,7 @@ public class CountDownLatch {
      *         while waiting
      */
     public void await() throws InterruptedException {
-        sync.acquireSharedInterruptibly(1);
+        sync.acquireSharedInterruptibly(1);//同步器的共享方法
     }
 
     /**
