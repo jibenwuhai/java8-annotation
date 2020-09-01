@@ -157,12 +157,12 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     private void enqueue(E x) {
         // assert lock.getHoldCount() == 1;
         // assert items[putIndex] == null;
-        final Object[] items = this.items;
-        items[putIndex] = x;
-        if (++putIndex == items.length)
-            putIndex = 0;
-        count++;
-        notEmpty.signal();
+        final Object[] items = this.items;//获取数组
+        items[putIndex] = x;//往队列里放数据
+        if (++putIndex == items.length)//放入指针到数组指到数组尽头
+            putIndex = 0;//重数组0继续开始
+        count++;//长度+1
+        notEmpty.signal();//唤醒notEmpty阻塞的condition
     }
 
     /**
@@ -174,14 +174,14 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         // assert items[takeIndex] != null;
         final Object[] items = this.items;
         @SuppressWarnings("unchecked")
-        E x = (E) items[takeIndex];
-        items[takeIndex] = null;
-        if (++takeIndex == items.length)
+        E x = (E) items[takeIndex];//从获取值指针处取值
+        items[takeIndex] = null;//获取值之后将位置清空，方便gc回收
+        if (++takeIndex == items.length)//获取到尾部，指针重O开始
             takeIndex = 0;
         count--;
         if (itrs != null)
-            itrs.elementDequeued();
-        notFull.signal();
+            itrs.elementDequeued();//同时更新迭代器中的元素数据
+        notFull.signal();//唤醒notFull的阻塞
         return x;
     }
 
@@ -250,12 +250,12 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      * @throws IllegalArgumentException if {@code capacity < 1}
      */
     public ArrayBlockingQueue(int capacity, boolean fair) {
-        if (capacity <= 0)
+        if (capacity <= 0)//
             throw new IllegalArgumentException();
-        this.items = new Object[capacity];
-        lock = new ReentrantLock(fair);
-        notEmpty = lock.newCondition();
-        notFull =  lock.newCondition();
+        this.items = new Object[capacity];//初始化一个传进来长度的Object数组
+        lock = new ReentrantLock(fair);//创建重入锁
+        notEmpty = lock.newCondition();//notEmpty阻塞Condition
+        notFull =  lock.newCondition();//notFull阻塞Condition
     }
 
     /**
@@ -276,16 +276,16 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      */
     public ArrayBlockingQueue(int capacity, boolean fair,
                               Collection<? extends E> c) {
-        this(capacity, fair);
+        this(capacity, fair);//初始化数组
 
         final ReentrantLock lock = this.lock;
-        lock.lock(); // Lock only for visibility, not mutual exclusion
+        lock.lock(); // Lock only for visibility, not mutual exclusion 锁只用于可见性，而不是互斥
         try {
             int i = 0;
             try {
-                for (E e : c) {
+                for (E e : c) {//遍历初始值
                     checkNotNull(e);
-                    items[i++] = e;
+                    items[i++] = e;//放入队列
                 }
             } catch (ArrayIndexOutOfBoundsException ex) {
                 throw new IllegalArgumentException();
@@ -345,15 +345,15 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      * @throws NullPointerException {@inheritDoc}
      */
     public void put(E e) throws InterruptedException {
-        checkNotNull(e);
-        final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
+        checkNotNull(e);//元素为空
+        final ReentrantLock lock = this.lock;//重入锁
+        lock.lockInterruptibly();//加锁
         try {
-            while (count == items.length)
-                notFull.await();
-            enqueue(e);
+            while (count == items.length)//队列满了
+                notFull.await();//阻塞在这里
+            enqueue(e);//真正放入队列的方法
         } finally {
-            lock.unlock();
+            lock.unlock();//解锁
         }
     }
 
@@ -396,12 +396,12 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     }
 
     public E take() throws InterruptedException {
-        final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
+        final ReentrantLock lock = this.lock;//同一把锁
+        lock.lockInterruptibly();//锁住保证线程安全
         try {
-            while (count == 0)
-                notEmpty.await();
-            return dequeue();
+            while (count == 0)//队列里无值
+                notEmpty.await();//notEmpty阻塞
+            return dequeue();//真的获取值的地方
         } finally {
             lock.unlock();
         }
@@ -1247,7 +1247,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
             lock.lock();
             try {
                 if (!isDetached())
-                    incorporateDequeues(); // might update lastRet or detach
+                    incorporateDequeues(); // might update lastRet or detach 可能会更新 lastRet 或者 detach
                 final int lastRet = this.lastRet;
                 this.lastRet = NONE;
                 if (lastRet >= 0) {

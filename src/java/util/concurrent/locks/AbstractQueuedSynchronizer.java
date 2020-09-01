@@ -955,7 +955,7 @@ public abstract class AbstractQueuedSynchronizer
                 if (p == head) {
                     int r = tryAcquireShared(arg);
                     if (r >= 0) {
-                        setHeadAndPropagate(node, r);
+                        setHeadAndPropagate(node, r);//传递唤醒
                         p.next = null; // help GC
                         if (interrupted)
                             selfInterrupt();
@@ -1006,7 +1006,7 @@ public abstract class AbstractQueuedSynchronizer
     /**
      * Acquires in shared timed mode.
      *
-     * @param arg the acquire argument
+     * @param arg the acquire argument*
      * @param nanosTimeout max wait time
      * @return {@code true} if acquired
      */
@@ -1280,7 +1280,7 @@ public abstract class AbstractQueuedSynchronizer
      */
     public final void acquireShared(int arg) {
         if (tryAcquireShared(arg) < 0)//获取共享锁
-            doAcquireShared(arg);//获取失败->写锁占有资源
+            doAcquireShared(arg);//获取失败-加入aqs等待队列
     }
 
     /**
@@ -1460,10 +1460,10 @@ public abstract class AbstractQueuedSynchronizer
      */
     final boolean apparentlyFirstQueuedIsExclusive() {
         Node h, s;
-        return (h = head) != null &&
-            (s = h.next)  != null &&
-            !s.isShared()         &&
-            s.thread != null;
+        return (h = head) != null &&//获取队列头 不为空
+            (s = h.next)  != null &&//头的next节点不为空，及排在队列的一个节点
+            !s.isShared()         &&//状态不是共享状态。
+            s.thread != null; //有线程
     }
 
     /**
@@ -1513,7 +1513,7 @@ public abstract class AbstractQueuedSynchronizer
         // The correctness of this depends on head being initialized
         // before tail and on head.next being accurate if the current
         // thread is first in queue.
-        Node t = tail; // Read fields in reverse initialization order
+        Node t = tail; // Read fields in reverse initialization order  以相反的初始化顺序读取字段
         Node h = head;
         Node s;
         return h != t &&
