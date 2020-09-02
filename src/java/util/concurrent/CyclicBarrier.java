@@ -198,8 +198,8 @@ public class CyclicBarrier {
     private int dowait(boolean timed, long nanos)
         throws InterruptedException, BrokenBarrierException,
                TimeoutException {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        final ReentrantLock lock = this.lock;//维护了一把重入锁
+        lock.lock();//线程要先获取锁
         try {
             final Generation g = generation;
 
@@ -207,42 +207,42 @@ public class CyclicBarrier {
                 throw new BrokenBarrierException();
 
             if (Thread.interrupted()) {
-                breakBarrier();
+                breakBarrier(); //破环屏障
                 throw new InterruptedException();
             }
 
-            int index = --count;
-            if (index == 0) {  // tripped
+            int index = --count;//已经执行过到这里的次数，由于这里已经加锁所以不会有并发问题
+            if (index == 0) {  // tripped，所以的线程都到了这个屏障点
                 boolean ranAction = false;
                 try {
-                    final Runnable command = barrierCommand;
+                    final Runnable command = barrierCommand;//获取屏障CyclicBarrier构造器的线程
                     if (command != null)
-                        command.run();
+                        command.run();//由最后一个线程调用run方法（这里没有新建一个线程）
                     ranAction = true;
-                    nextGeneration();
+                    nextGeneration();//唤醒condition里等待的队列
                     return 0;
                 } finally {
                     if (!ranAction)
-                        breakBarrier();
+                        breakBarrier();//破环屏障
                 }
             }
 
-            // loop until tripped, broken, interrupted, or timed out
+            // loop until tripped, broken, interrupted, or timed out 循环直到触发、损坏、中断 或者超时
             for (;;) {
                 try {
-                    if (!timed)
-                        trip.await();
+                    if (!timed)//不需要超时等待
+                        trip.await();//condition阻塞在这里，让其他线程抢占lock
                     else if (nanos > 0L)
-                        nanos = trip.awaitNanos(nanos);
-                } catch (InterruptedException ie) {
+                        nanos = trip.awaitNanos(nanos);//超时阻塞，等待被唤醒或者超时
+                } catch (InterruptedException ie) {//阻塞时候被中断。
                     if (g == generation && ! g.broken) {
-                        breakBarrier();
+                        breakBarrier();//破环屏障
                         throw ie;
                     } else {
                         // We're about to finish waiting even if we had not
                         // been interrupted, so this interrupt is deemed to
                         // "belong" to subsequent execution.
-                        Thread.currentThread().interrupt();
+                        Thread.currentThread().interrupt();//回复中断标识
                     }
                 }
 
@@ -359,7 +359,7 @@ public class CyclicBarrier {
      */
     public int await() throws InterruptedException, BrokenBarrierException {
         try {
-            return dowait(false, 0L);
+            return dowait(false, 0L);//nanos时等待时间
         } catch (TimeoutException toe) {
             throw new Error(toe); // cannot happen
         }
